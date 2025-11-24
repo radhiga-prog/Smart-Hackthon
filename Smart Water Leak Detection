@@ -1,0 +1,30 @@
+#define WATER_SENSOR D5
+#define BUZZER D6
+#define LED D7
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(WATER_SENSOR, INPUT);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(LED, OUTPUT);
+
+  Serial.println("Smart Water Leak Detection System Started...");
+}
+
+void loop() {
+  int leakStatus = digitalRead(WATER_SENSOR);
+
+  if (leakStatus == LOW) {   // LOW = water detected
+    Serial.println("⚠ WATER LEAK DETECTED!");
+    digitalWrite(BUZZER, HIGH);
+    digitalWrite(LED, HIGH);
+  }
+  else {
+    Serial.println("No Leak");
+    digitalWrite(BUZZER, LOW);
+    digitalWrite(LED, LOW);
+  }
+
+  delay(400);
+}
