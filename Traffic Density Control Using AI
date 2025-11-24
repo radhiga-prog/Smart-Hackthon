@@ -1,0 +1,61 @@
+from ultralytics import YOLO
+import cv2
+import time
+
+# Load YOLO model
+model = YOLO("yolov8n.pt")   # small model for fast detection
+
+# Video input
+video = cv2.VideoCapture("videos/traffic.mp4")
+
+# Default signal timings
+GREEN_MIN = 5
+GREEN_MAX = 25
+
+def calculate_signal_time(vehicle_count):
+    """Dynamic timing based on traffic density."""
+    if vehicle_count == 0:
+        return GREEN_MIN
+    elif vehicle_count > 30:
+        return GREEN_MAX
+    else:
+        return GREEN_MIN + int(vehicle_count / 2)
+
+while True:
+    ret, frame = video.read()
+    if not ret:
+        break
+
+    # YOLO detection
+    results = model(frame, stream=True)
+
+    vehicle_count = 0
+
+    for result in results:
+        for box in result.boxes:
+            cls = int(box.cls[0])
+
+            # YOLO class IDs for vehicles
+            if cls in [2, 3, 5, 7]:  # Car, Motorcycle, Bus, Truck
+                vehicle_count += 1
+
+                x1, y1, x2, y2 = box.xyxy[0]
+                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+
+    # Calculate signal timing
+    green_time = calculate_signal_time(vehicle_count)
+
+    # Display outputs
+    cv2.putText(frame, f"Vehicle Count: {vehicle_count}", (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+
+    cv2.putText(frame, f"Green Light Time: {green_time} sec", (20, 80),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+
+    cv2.imshow("Traffic Density AI System", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+video.release()
+cv2.destroyAllWindows()
