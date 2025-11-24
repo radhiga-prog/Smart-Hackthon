@@ -1,0 +1,62 @@
+#include <ESP8266WiFi.h>
+#include <FirebaseESP8266.h>
+
+#define WIFI_SSID "YourWiFiName"
+#define WIFI_PASSWORD "YourWiFiPassword"
+
+#define FIREBASE_HOST "your-project-id.firebaseio.com"
+#define FIREBASE_AUTH "your_firebase_secret"
+
+FirebaseData fbData;
+
+#define trigPin D5
+#define echoPin D6
+
+long duration;
+int distance;
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi...");
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected!");
+
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+}
+
+void loop() {
+  // Send trigger pulse
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;  // Convert to cm
+
+  int bin_height = 30; // cm
+  int filled_percent = ((bin_height - distance) * 100) / bin_height;
+
+  if (filled_percent < 0) filled_percent = 0;
+  if (filled_percent > 100) filled_percent = 100;
+
+  // Upload to Firebase
+  Firebase.setInt(fbData, "/smartbin/level", filled_percent);
+  
+  Serial.print("Bin Level: ");
+  Serial.print(filled_percent);
+  Serial.println("%");
+
+  delay(2000);
+}
