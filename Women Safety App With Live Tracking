@@ -1,0 +1,64 @@
+package com.womensafety
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Bundle
+import android.telephony.SmsManager
+import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var fusedLocation: FusedLocationProviderClient
+    private val phoneNumbers = listOf("9876543210", "9123456789") // emergency contacts
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        fusedLocation = LocationServices.getFusedLocationProviderClient(this)
+
+        val sosBtn = findViewById<Button>(R.id.btnSOS)
+
+        sosBtn.setOnClickListener {
+            sendSOS()
+        }
+    }
+
+    private fun sendSOS() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.SEND_SMS),
+                101
+            )
+            return
+        }
+
+        fusedLocation.lastLocation.addOnSuccessListener { location: Location? ->
+            if (location != null) {
+
+                val lat = location.latitude
+                val lon = location.longitude
+                val message = "⚠ SOS Alert! I need help.\nLocation: https://maps.google.com/?q=$lat,$lon"
+
+                val smsManager = SmsManager.getDefault()
+                for (num in phoneNumbers) {
+                    smsManager.sendTextMessage(num, null, message, null, null)
+                }
+
+                // Start live tracking service
+                startService(Intent(this, SOSService::class.java))
+            }
+        }
+    }
+}
