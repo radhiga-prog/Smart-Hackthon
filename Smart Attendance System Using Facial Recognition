@@ -1,0 +1,69 @@
+import cv2
+import face_recognition
+import numpy as np
+import os
+import pandas as pd
+from datetime import datetime
+
+# Load known faces
+known_encodings = []
+known_names = []
+
+for file in os.listdir("known_faces"):
+    if file.endswith(".npy"):
+        encoding = np.load("known_faces/" + file)
+        known_encodings.append(encoding)
+        known_names.append(file[:-4])
+
+# Attendance file
+attendance_file = "attendance.csv"
+
+# Create file if not exists
+if not os.path.exists(attendance_file):
+    df = pd.DataFrame(columns=["Name", "Time"])
+    df.to_csv(attendance_file, index=False)
+
+video = cv2.VideoCapture(0)
+
+print("Starting Smart Attendance System...")
+
+while True:
+    ret, frame = video.read()
+    rgb = frame[:, :, ::-1]
+
+    # Detect faces
+    locations = face_recognition.face_locations(rgb)
+    encodings = face_recognition.face_encodings(rgb, locations)
+
+    for encoding, (top, right, bottom, left) in zip(encodings, locations):
+        
+        # Compare faces
+        matches = face_recognition.compare_faces(known_encodings, encoding)
+        name = "Unknown"
+
+        if True in matches:
+            index = matches.index(True)
+            name = known_names[index]
+
+            # Mark attendance
+            df = pd.read_csv(attendance_file)
+            if name not in df["Name"].values:
+                now = datetime.now().strftime("%H:%M:%S")
+                new_data = pd.DataFrame([[name, now]], columns=["Name", "Time"])
+                df = pd.concat([df, new_data], ignore_index=True)
+                df.to_csv(attendance_file, index=False)
+                print(f"Attendance marked for {name}")
+
+        # Draw box
+        cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+        cv2.putText(frame, name, (left, top - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+    # Show video
+    cv2.imshow("Smart Attendance System - Press 'q' to Quit", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+video.release()
+cv2.destroyAllWindows()
