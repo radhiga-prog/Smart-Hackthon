@@ -1,0 +1,39 @@
+import face_recognition
+import cv2
+
+# Load known face image
+known_image = face_recognition.load_image_file("known.jpg")
+known_encoding = face_recognition.face_encodings(known_image)[0]
+
+known_name = "Person 1"
+
+video = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = video.read()
+
+    # Convert to RGB (face_recognition uses RGB)
+    rgb_frame = frame[:, :, : :-1]
+
+    # Find faces
+    face_locations = face_recognition.face_locations(rgb_frame)
+    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+    for (top, right, bottom, left), encoding in zip(face_locations, face_encodings):
+
+        match = face_recognition.compare_faces([known_encoding], encoding)
+
+        name = known_name if match[0] else "Unknown"
+
+        # Draw box
+        cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+        cv2.putText(frame, name, (left, top - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+    cv2.imshow("Facial Recognition", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+video.release()
+cv2.destroyAllWindows()
