@@ -1,0 +1,57 @@
+package com.womensafety
+
+import android.Manifest
+import android.app.Service
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.os.IBinder
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.*
+import com.google.firebase.database.FirebaseDatabase
+
+class SOSService : Service() {
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    override fun onCreate() {
+        super.onCreate()
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        val request = LocationRequest.Builder(3000)
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .build()
+
+        if (ActivityCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        fusedLocationClient.requestLocationUpdates(
+            request,
+            object : LocationCallback() {
+                override fun onLocationResult(result: LocationResult) {
+                    for (location in result.locations) {
+                        sendLocationToFirebase(location)
+                    }
+                }
+            },
+            mainLooper
+        )
+    }
+
+    private fun sendLocationToFirebase(location: Location) {
+        val db = FirebaseDatabase.getInstance().getReference("tracks/user1")
+
+        val data = mapOf(
+            "latitude" to location.latitude,
+            "longitude" to location.longitude,
+            "time" to System.currentTimeMillis()
+        )
+
+        db.updateChildren(data)
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+}
