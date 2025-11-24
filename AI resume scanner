@@ -1,0 +1,67 @@
+# 📘 AI Resume Scanner
+import PyPDF2
+import re
+import spacy
+
+# Load English NLP model
+nlp = spacy.load("en_core_web_sm")
+
+# Function to extract text from PDF
+def extract_text_from_pdf(file_path):
+    text = ""
+    with open(file_path, "rb") as pdf_file:
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+    return text
+
+# Extract basic info
+def extract_info(text):
+    doc = nlp(text)
+    info = {}
+
+    # Extract name (first entity as PERSON)
+    for ent in doc.ents:
+        if ent.label_ == "PERSON":
+            info["Name"] = ent.text
+            break
+
+    # Extract email
+    email = re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
+    if email:
+        info["Email"] = email[0]
+
+    # Extract phone number
+    phone = re.findall(r"\+?\d[\d -]{8,12}\d", text)
+    if phone:
+        info["Phone"] = phone[0]
+
+    return info
+
+# Extract skills
+def extract_skills(text):
+    # Simple skill keywords list
+    skills = ["Python", "Java", "C++", "SQL", "HTML", "CSS", "JavaScript",
+              "Machine Learning", "AI", "Data Science", "Communication", "Teamwork"]
+
+    found_skills = [skill for skill in skills if re.search(rf"\b{skill}\b", text, re.IGNORECASE)]
+    return list(set(found_skills))
+
+# Main
+if __name__ == "__main__":
+    file_path = "resume.pdf"  # ← Replace with your resume file
+    text = extract_text_from_pdf(file_path)
+
+    print("📄 Extracting Resume Data...\n")
+
+    info = extract_info(text)
+    skills = extract_skills(text)
+
+    print("👤 Personal Information:")
+    for key, value in info.items():
+        print(f"{key}: {value}")
+
+    print("\n🧩 Skills Found:")
+    print(", ".join(skills) if skills else "No skills detected.")
+
+    # (Optional) Experience extraction can be added similarly using regex or NLP pattern matching
