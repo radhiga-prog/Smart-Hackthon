@@ -1,1 +1,45 @@
-# Smart-Hackthon
+
+A chatbot system
+
+# Simple Rule-Based Chatbot System
+
+def chatbot_response(user_input):
+    user_input = user_input.lower()
+
+    # Greetings
+    if "hello" in user_input or "hi" in user_input:
+        return "Hello! How can I assist you today?"
+
+    # Asking about chatbot
+    elif "who are you" in user_input:
+        return "I am a simple chatbot created to help you."
+
+    # Asking about purpose
+    elif "what can you do" in user_input:
+        return "I can chat with you, answer simple questions, and help with basic information."
+
+    # Thanks
+    elif "thank you" in user_input or "thanks" in user_input:
+        return "You're welcome!"
+
+    # Exit command
+    elif "bye" in user_input:
+        return "Goodbye! Have a nice day."
+
+    # Default response
+    else:
+        return "Sorry, I don't understand that. Can you ask something else?"
+
+
+# Main Program
+print("Chatbot System Started!")
+print("Type 'bye' to exit.\n")
+
+while True:
+    user = print("You: ", end="")
+    user = input()
+    response = chatbot_response(user)
+    print("Bot:", response)
+
+    if "bye" in user.lower():
+        break
