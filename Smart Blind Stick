@@ -1,0 +1,55 @@
+#define trigPin 9
+#define echoPin 10
+#define buzzer 3
+#define vibration 5
+#define waterSensor A0
+
+long duration;
+int distance;
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(vibration, OUTPUT);
+  
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  // Trigger ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;  // Convert to cm
+
+  Serial.print("Distance: ");
+  Serial.println(distance);
+
+  // Obstacle Detection
+  if (distance > 0 && distance < 80) {   // obstacle < 80 cm
+    digitalWrite(buzzer, HIGH);
+    digitalWrite(vibration, HIGH);
+  } 
+  else {
+    digitalWrite(buzzer, LOW);
+    digitalWrite(vibration, LOW);
+  }
+
+  // Water Detection
+  int waterValue = analogRead(waterSensor);
+  if (waterValue > 300) {  // water detected
+    tone(buzzer, 1000);
+    delay(200);
+    noTone(buzzer);
+  }
+
+  delay(100);
+}
